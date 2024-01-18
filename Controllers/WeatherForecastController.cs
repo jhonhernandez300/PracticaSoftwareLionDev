@@ -1,9 +1,13 @@
+using LionDev.Models;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace LionDev.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("WeatherForecast")]
     public class WeatherForecastController : ControllerBase
     {
         private static readonly string[] Summaries = new[]
@@ -19,8 +23,30 @@ namespace LionDev.Controllers
         }
 
         [HttpGet]
-        public IEnumerable<WeatherForecast> Get()
+        [Route("Get")]
+        //public IEnumerable<WeatherForecast> Get()
+        public dynamic Get()
         {
+            //the user associated with the current request.
+            //the identity of the user making the request.
+            //: Attempts to cast the Identity property to a ClaimsIdentity
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            var rToken = Jwt.validarToken(identity);
+
+            if(!rToken.success) return rToken;
+
+            Usuario usuario = rToken.result;
+
+            if (usuario.rol != "administrador")
+            {
+                return new
+                {
+                    success = false,
+                    message = "No tienes permiso para ver el forecast"
+                };
+            }
+
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {
                 Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
